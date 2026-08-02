@@ -10,6 +10,26 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+/** Emit a real error before Vercel's 60s ceiling turns into a silent hang. */
+const PIPELINE_DEADLINE_MS = 52_000;
+
+function deadline<T>(work: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    work,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              "The research run exceeded the 52s budget and was stopped. This is usually a slow AI model — pick a faster one and try again."
+            )
+          ),
+        ms
+      )
+    ),
+  ]);
+}
+
 const enc = new TextEncoder();
 
 function docketNo(): string {
@@ -165,15 +185,18 @@ export async function POST(req: NextRequest) {
 
         /* ── 4. AI analysis ────────────────────────────────── */
         begin("analyse", "analyse", "Analysing with AI", chosenModel);
-        const ai = await analyse(chosenModel, {
+        const ai = await deadline(
+          analyse(chosenModel, {
           query: input,
           website,
           pages: crawl.pages,
           search: [{ query: `${input} official website`, hits: seedHits }, ...sweeps].filter((s) => s.hits.length),
           knowledge,
           extracted,
-          apiKey: openrouterKey,
-        });
+            apiKey: openrouterKey,
+          }),
+          Math.max(8_000, PIPELINE_DEADLINE_MS - (Date.now() - t0))
+        );
         finish(
           "analyse",
           "analyse",

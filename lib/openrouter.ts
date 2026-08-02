@@ -78,13 +78,30 @@ function carveJson(raw: string): any {
   throw new Error("The model did not return valid JSON. Try a different model.");
 }
 
-async function call(model: string, messages: any[], jsonMode: boolean, timeoutMs: number, key?: string) {
+interface RawReply {
+  ok: boolean;
+  status: number;
+  text: string;
+}
+
+/**
+ * One completion request. The abort signal must stay armed until the body is
+ * fully read — clearing it after `fetch` resolves only covers the headers and
+ * leaves a stalled body to hang until the platform kills the whole function.
+ */
+async function call(
+  model: string,
+  messages: any[],
+  jsonMode: boolean,
+  timeoutMs: number,
+  apiKey?: string
+): Promise<RawReply> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    return await fetch(`${BASE}/chat/completions`, {
+    const res = await fetch(`${BASE}/chat/completions`, {
       method: "POST",
-      headers: headers(key),
+      headers: headers(apiKey),
       signal: ctl.signal,
       body: JSON.stringify({
         model,
@@ -94,15 +111,20 @@ async function call(model: string, messages: any[], jsonMode: boolean, timeoutMs
         ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
     });
+    const text = await res.text();
+    return { ok: res.ok, status: res.status, text };
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        `The model took longer than ${Math.round(timeoutMs / 1000)}s to answer. Pick a faster model and try again.`
+      );
+    }
+    throw err;
   } finally {
     clearTimeout(t);
   }
 }
 
-/**
- * Ask the chosen model for a JSON object. Tries native JSON mode first and
- * silently retries without it, since not every OpenRouter model supports it.
- */
 export async function completeJson(
   model: string,
   system: string,
@@ -117,20 +139,28 @@ export async function completeJson(
 
   let res = await call(model, messages, true, timeoutMs, key);
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
     if (res.status === 401) throw new Error("OpenRouter rejected the API key (401). Check OPENROUTER_API_KEY.");
     if (res.status === 402) throw new Error("OpenRouter credits exhausted for this model. Pick a free model.");
-    if (res.status === 429) throw new Error("OpenRouter rate limit hit. Wait a moment or pick another model.");
+    if (res.status === 429)
+      throw new Error("OpenRouter rate limit reached for this model. Wait a minute or pick another model.");
+    // Not every model supports native JSON mode — retry plainly before failing.
+    const first = res;
     res = await call(model, messages, false, timeoutMs, key);
-    if (!res.ok) {
-      const b2 = await res.text().catch(() => body);
-      throw new Error(`OpenRouter ${res.status}: ${b2.slice(0, 200)}`);
-    }
+    if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(res.text || first.text).slice(0, 200)}`);
   }
 
-  const json: any = await res.json();
+  let json: any;
+  try {
+    json = JSON.parse(res.text);
+  } catch {
+    throw new Error("OpenRouter returned a malformed response. Try a different model.");
+  }
   if (json.error) throw new Error(String(json.error.message ?? json.error));
-  const content: string = json.choices?.[0]?.message?.content ?? "";
+
+  // Reasoning models (gpt-oss and friends) sometimes leave `content` empty and
+  // put everything in `reasoning`, so fall through the alternatives.
+  const msg = json.choices?.[0]?.message ?? {};
+  const content: string = msg.content || msg.reasoning || msg.reasoning_content || "";
   if (!content.trim()) throw new Error("The model returned an empty response. Try a different model.");
   return carveJson(content);
 }

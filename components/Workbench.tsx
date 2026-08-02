@@ -156,7 +156,19 @@ export default function Workbench() {
         }
       }
 
-      patch(id, (t) => ({ ...t, running: false }));
+      patch(id, (t) =>
+        t.report || t.error
+          ? { ...t, running: false }
+          : {
+              ...t,
+              running: false,
+              steps: t.steps.map((s) => (s.status === "running" ? { ...s, status: "failed" as const } : s)),
+              error: {
+                message: "The connection closed before the report arrived.",
+                hint: "The server run was cut short, usually by a slow AI model. Pick a different model and try again.",
+              },
+            }
+      );
       if (finished && cfg.autoSend && cfg.botToken && cfg.channelId) {
         void sendToDiscord(id, finished, cfg);
       }
