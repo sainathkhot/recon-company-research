@@ -3,7 +3,7 @@ import { memo } from "./cache";
 
 const BASE = "https://openrouter.ai/api/v1";
 
-export const DEFAULT_MODEL = "openai/gpt-oss-20b:free";
+export const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
 
 /** Header values must be Latin-1 encodable, so anything else is stripped. */
 const ascii = (v: string) => v.replace(/[^\x20-\xFF]/g, "");

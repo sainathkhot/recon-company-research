@@ -31,7 +31,7 @@ export default function Workbench() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [models, setModels] = useState<OpenRouterModel[]>([]);
-  const [model, setModel] = useState("openai/gpt-oss-20b:free");
+  const [model, setModel] = useState("google/gemma-4-26b-a4b-it:free");
   const [config, setConfig] = useState<DiscordConfig>(emptyConfig);
 
   const endRef = useRef<HTMLDivElement>(null);
@@ -43,7 +43,7 @@ export default function Workbench() {
       .then((r) => r.json())
       .then((d) => {
         setModels(d.models ?? []);
-        setModel(loadModel(d.default ?? "openai/gpt-oss-20b:free"));
+        setModel(loadModel(d.default ?? "google/gemma-4-26b-a4b-it:free"));
       })
       .catch(() => {});
   }, []);
