@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Ledger — daylight archive */
+  :root {
+    --c-paper: 232 235 227;
+    --c-card: 251 250 245;
+    --c-ink: 20 32 28;
+    --c-slate: 94 107 99;
+    --c-rule: 201 207 194;
+    --c-brass: 154 117 38;
+    --c-stamp: 122 36 24;
+    --c-masthead: 20 32 28;
+    --c-masthead-fg: 251 250 245;
+    --c-btn-bg: 20 32 28;
+    --c-btn-bg-hover: 34 51 45;
+    --c-btn-fg: 251 250 245;
+    --c-grid: 20 32 28;
+    --c-seal: 196 98 72;
+    --grid-a1: 0.032;
+    --grid-a2: 0.018;
+    --select-bg: #d8c9a0;
+    color-scheme: light;
+  }
+
+  /* Nightshift — the same reading room after hours */
+  [data-theme="dark"] {
+    --c-paper: 14 17 15;
+    --c-card: 24 28 24;
+    --c-ink: 231 234 224;
+    --c-slate: 146 156 142;
+    --c-rule: 47 54 47;
+    --c-brass: 203 165 82;
+    --c-stamp: 216 112 88;
+    --c-masthead: 8 10 9;
+    --c-masthead-fg: 238 240 232;
+    --c-btn-bg: 231 234 224;
+    --c-btn-bg-hover: 255 255 255;
+    --c-btn-fg: 14 17 15;
+    --c-grid: 231 234 224;
+    --c-seal: 216 112 88;
+    --grid-a1: 0.03;
+    --grid-a2: 0.016;
+    --select-bg: #4a4326;
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: rgb(var(--c-paper));
+    color: rgb(var(--c-ink));
+    font-family: Karla, system-ui, sans-serif;
+    background-image: linear-gradient(
+        transparent 27px,
+        rgb(var(--c-grid) / var(--grid-a1)) 27px,
+        rgb(var(--c-grid) / var(--grid-a1)) 28px
+      ),
+      linear-gradient(
+        90deg,
+        transparent 27px,
+        rgb(var(--c-grid) / var(--grid-a2)) 27px,
+        rgb(var(--c-grid) / var(--grid-a2)) 28px
+      );
+    background-size: 28px 28px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  ::selection {
+    background: var(--select-bg);
+    color: rgb(var(--c-ink));
+  }
+
+  *:focus-visible {
+    outline: 2px solid rgb(var(--c-brass));
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  button,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-slate;
+  }
+
+  .hairline {
+    @apply border-t border-rule;
+  }
+
+  /* A filing card. Squared corners, one crisp edge, no soft shadow soup. */
+  .filed {
+    background-color: rgb(var(--c-card));
+    border: 1px solid rgb(var(--c-rule));
+    box-shadow: 0 1px 0 rgb(var(--c-grid) / 0.05), 0 8px 22px -18px rgb(0 0 0 / 0.5);
+  }
+
+  .perf {
+    background-image: radial-gradient(circle at 4px 50%, rgb(var(--c-paper)) 2.4px, transparent 2.6px);
+    background-size: 8px 100%;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 border px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors;
+  }
+  .btn-primary {
+    @apply btn border-btnbg bg-btnbg text-btnfg;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: rgb(var(--c-btn-bg-hover));
+    border-color: rgb(var(--c-btn-bg-hover));
+  }
+  .btn-ghost {
+    @apply btn border-rule bg-transparent text-ink hover:border-ink;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: rgb(var(--c-ink) / 0.05);
+  }
+  .btn:disabled,
+  .btn-primary:disabled,
+  .btn-ghost:disabled {
+    @apply cursor-not-allowed opacity-40;
+  }
+
+  .field {
+    @apply w-full border border-rule bg-card px-3 py-2.5 text-sm text-ink outline-none placeholder:text-slate/60 focus:border-ink;
+  }
+
+  /* The signature: a rotated rubber stamp, inked over the dark masthead. */
+  .rubber {
+    color: rgb(var(--c-seal));
+    border: 2.5px solid rgb(var(--c-seal));
+    opacity: 0.92;
+    box-shadow: inset 0 0 0 1px rgb(var(--c-seal) / 0.25);
+  }
+
+  /* Bodoni's hairlines thin out badly at display sizes — weight them up. */
+  .display {
+    @apply font-display font-semibold tracking-[-0.012em];
+  }
+}
+
+@layer utilities {
+  .prose-dossier p {
+    @apply mb-3 text-[15px] leading-[1.65] text-ink/85;
+  }
+  .prose-dossier p:last-child {
+    @apply mb-0;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-rule));
+    border: 3px solid rgb(var(--c-paper));
+  }
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
