@@ -123,7 +123,7 @@ Create `.env.local` in the project root (git-ignored). `.env.example` documents 
 | Variable | Required | Description |
 | --- | --- | --- |
 | `SERPER_API_KEY` | Recommended | Serper.dev API key. Used for website resolution, public-source sweeps and competitor verification. A run costs 5–11 queries. |
-| `OPENROUTER_API_KEY` | Recommended | OpenRouter API key. The model is chosen in the UI, so one key covers every model. The default is `openai/gpt-oss-20b:free`, which needs no credit. |
+| `OPENROUTER_API_KEY` | Recommended | OpenRouter API key. The model is chosen in the UI, so one key covers every model. The default is `google/gemma-4-26b-a4b-it:free`, which needs no credit. |
 | `NEXT_PUBLIC_SITE_URL` | No | Your public URL. Sent to OpenRouter as `HTTP-Referer` for attribution. Defaults to `http://localhost:3000`. |
 | `DISCORD_BOT_TOKEN` | No | Server-side fallback for Discord delivery. Values entered at `/settings` take priority. |
 | `DISCORD_CHANNEL_ID` | No | Server-side fallback channel. Values entered at `/settings` take priority. |
@@ -149,11 +149,10 @@ the in-app settings page without redeploying.
 ## Getting the API keys
 
 **Serper.dev** — sign up at [serper.dev](https://serper.dev), then Dashboard → API Key. The free
-tier includes 2,500 queries, which is roughly 250–400 full research runs.
-
+tier includes 2,500 queries, which is roughly 250 full research runs.
 **OpenRouter** — sign up at [openrouter.ai](https://openrouter.ai), then
 [openrouter.ai/keys](https://openrouter.ai/keys) → Create Key. No credit card needed: the app
-defaults to `openai/gpt-oss-20b:free`, and the model dropdown has a **Free models only** filter.
+defaults to `google/gemma-4-26b-a4b-it:free`, and the model dropdown has a **Free models only** filter.
 Free models are capped at 20 requests/minute and 50/day on an account that has never bought credits.
 
 ---
@@ -188,7 +187,7 @@ The **Send to Discord** button on every dossier does the same thing on demand.
 
 The research route declares `export const maxDuration = 60`, which is the Hobby-plan ceiling. The
 pipeline is budgeted to finish inside it: crawling is capped at 8 pages with 7-second per-page
-timeouts, and the AI call is capped at 38 seconds.
+timeouts, and the AI call is capped at 45 seconds, inside a hard 52-second pipeline deadline.
 
 Any Node-capable host works — Netlify (with `@netlify/plugin-nextjs`), Cloudflare (Node compat),
 Render, Railway, Fly. The only hard requirement is a Node runtime that supports streaming responses;
@@ -276,7 +275,7 @@ explicitly told to return an empty string rather than guess. This is why a phone
 is a phone number that actually appears on the site.
 
 **The corpus is budgeted, not truncated.** `budgetedCorpus()` in `lib/analyse.ts` allocates a share
-of the ~46k character context to each page weighted by page type, so a long Careers page can't crowd
+of the ~26k character context to each page weighted by page type, so a long Careers page can't crowd
 out the About page.
 
 **Competitors are proposed by the model and verified by search.** Any competitor the model returns
@@ -348,9 +347,15 @@ needs to exist — redeploy after adding them.
 **"OpenRouter credits exhausted for this model."** Pick a model with the **Free** badge, or add credit
 at openrouter.ai.
 
-**"The model did not return valid JSON."** Smaller models occasionally lose the schema. Open the
-model dropdown and switch — DeepSeek V3 and Llama 3.3 70B are free and more reliable on long JSON;
-GPT-4o mini or Gemini Flash are the paid options.
+**"The model took longer than 45s to answer."** Free OpenRouter routes are queued behind paid traffic
+and throughput varies by hour, so a model that finishes in 25 seconds one minute can miss the window
+the next. Switch models in the dropdown — the run is capped at 45 seconds, inside Vercel's 60-second
+function ceiling, so it fails cleanly with this message rather than hanging. Paid models such as
+`openai/gpt-4o-mini` answer in under ten seconds and are not queued.
+
+**"The model did not return valid JSON."** Smaller models occasionally lose the schema. Open the model
+dropdown, tick **Free models only**, and pick another. Gemma 4 26B works reliably; avoid reasoning
+models such as gpt-oss, which spend most of their time budget thinking before they write anything.
 
 **"Site blocked the crawler."** Some sites reject non-browser user agents or require JavaScript to
 render. The run continues on search results alone and the trail marks the crawl step as skipped, so
