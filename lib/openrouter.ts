@@ -107,7 +107,11 @@ async function call(
         model,
         messages,
         temperature: 0.25,
-        max_tokens: 3000,
+        max_tokens: 2200,
+        // gpt-oss and other reasoning models will happily spend thousands of
+        // tokens deliberating. Low effort keeps them inside the time budget;
+        // models that don't reason ignore this field.
+        reasoning: { effort: "low" },
         ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
     });

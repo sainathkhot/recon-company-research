@@ -43,7 +43,7 @@ export interface AnalysisInput {
   apiKey?: string;
 }
 
-function budgetedCorpus(pages: CrawledPage[], budget = 46_000): string {
+function budgetedCorpus(pages: CrawledPage[], budget = 26_000): string {
   // Home/About/Products get the biggest slice; the tail gets whatever remains.
   const weights: Record<string, number> = {
     Home: 1.25,
@@ -123,7 +123,7 @@ Rules:
 - Never copy marketing slogans verbatim. Write in neutral analyst register.
 - Output the JSON object only.`;
 
-  const raw = await completeJson(model, SYSTEM, user, 38_000, input.apiKey);
+  const raw = await completeJson(model, SYSTEM, user, 45_000, input.apiKey);
   return normalise(raw);
 }
 
