@@ -198,37 +198,59 @@ the API routes use the Node runtime, not Edge, because `pdf-lib` needs it.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    A([Browser · chat UI]) -->|"POST /api/research"| B
+
+    subgraph PIPE["Research pipeline · streamed to the browser over SSE"]
+        direction LR
+        B["1 · Resolve<br/>name to official domain<br/><i>serper.ts</i>"]
+        C["2 · Search<br/>4 parallel queries<br/><i>serper.ts</i>"]
+        D["3 · Crawl<br/>best-first, 8 pages<br/><i>crawler.ts</i>"]
+        E["4 · Extract<br/>JSON-LD, tel:, mailto:<br/><i>extract.ts</i>"]
+        F["5 · Analyse<br/>one JSON completion<br/><i>openrouter.ts</i>"]
+        G["6 · Verify<br/>competitor homepages<br/><i>serper.ts</i>"]
+        H["7 · Compile<br/>report + evidence trail"]
+        B --> C --> D --> E --> F --> G --> H
+    end
+
+    H -->|"step · report · error"| I(["Dossier card"])
+    I --> J["POST /api/pdf"]
+    I --> K["POST /api/discord"]
+    J --> L["pdf-lib<br/>layout engine"]
+    K --> L
+    L --> M(["Download"])
+    L --> N(["Discord Bot API<br/>multipart upload"])
+
+    classDef stage fill:#FBFAF5,stroke:#9A7526,stroke-width:1px,color:#14201C
+    classDef edge fill:#14201C,stroke:#14201C,color:#FBFAF5
+    class B,C,D,E,F,G,H stage
+    class A,I,M,N edge
+```
+
+<details>
+<summary>Same pipeline, with per-stage detail</summary>
+
 ```
 Browser (chat UI)
     │  POST /api/research  { query, model }
     ▼
 ┌──────────────────────────────── /api/research (SSE stream) ───────────────────────────────┐
-│                                                                                            │
 │  1. RESOLVE     name → official domain          serper.ts    knowledge panel, then scored  │
 │                 URL  → normalised origin                     organic results               │
-│                                                                                            │
 │  2. SEARCH      4 parallel Serper queries       serper.ts    overview · contact ·          │
 │                                                              products · competitors        │
-│                                                                                            │
-│  3. CRAWL       best-first, 8 pages, conc. 4    crawler.ts   priority scoring, dedupe,     │
-│                                                              content extraction            │
-│                                                                                            │
+│  3. CRAWL       best-first, 8 pages, conc. 4    crawler.ts   priority scoring, dedupe      │
 │  4. EXTRACT     deterministic facts             extract.ts   schema.org JSON-LD, tel:/     │
 │                                                              mailto:, contact-page regex   │
-│                                                                                            │
-│  5. ANALYSE     one JSON completion             analyse.ts   budgeted corpus + verified     │
+│  5. ANALYSE     one JSON completion             analyse.ts   budgeted corpus + verified    │
 │                                                 openrouter.ts fields + search context      │
-│                                                                                            │
-│  6. VERIFY      competitor homepages            serper.ts    one search per unconfirmed URL │
-│                                                                                            │
+│  6. VERIFY      competitor homepages            serper.ts    one search per unconfirmed    │
 │  7. COMPILE     CompanyReport + evidence trail                                             │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
-    │  server-sent events: step · report · error
-    ▼
-Dossier card ──► POST /api/pdf     ──► pdf-lib ──► download
-             └─► POST /api/discord ──► pdf-lib ──► Discord Bot API (multipart upload)
 ```
 
+</details>
 ---
 
 ## Implementation notes
