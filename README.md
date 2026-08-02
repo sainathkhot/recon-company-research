@@ -4,7 +4,7 @@ Give it a company name or a website URL. It finds the official site, crawls the 
 sweeps public sources through Google, has an OpenRouter model of your choosing write the analysis,
 verifies the competitor set, and files a typeset PDF dossier — optionally posting it straight to Discord.
 
-**Live deployment:** `<add your Vercel URL here>`
+**Live deployment:** `[<add your Vercel URL here>](https://recon-company-research.vercel.app/)`
 
 ---
 
