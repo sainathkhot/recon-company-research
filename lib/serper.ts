@@ -36,6 +36,7 @@ export async function serper(
         headers: { "X-API-KEY": key, "Content-Type": "application/json" },
         body: JSON.stringify({ q: query, num: opts.num ?? 8, ...(opts.gl ? { gl: opts.gl } : {}) }),
         signal: ctl.signal,
+        cache: "no-store",
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");

@@ -60,6 +60,7 @@ async function get(url: string, timeoutMs = 7000): Promise<string | null> {
     const res = await fetch(url, {
       signal: ctl.signal,
       redirect: "follow",
+      cache: "no-store",
       headers: {
         "User-Agent": UA,
         Accept: "text/html,application/xhtml+xml",
@@ -167,6 +168,12 @@ export async function crawlSite(
   const queue: { url: string; weight: number; kind: string }[] = [{ url: start, weight: 100, kind: "Home" }];
   const seen = new Set<string>([start]);
   const fingerprints = new Set<string>();
+  /**
+   * Sites with large listing sections (portfolio, blog, team) otherwise flood
+   * the frontier with near-identical stubs and eat the whole page budget.
+   * Unclassified pages get at most four slots per top-level section.
+   */
+  const sectionQuota = new Map<string, number>();
 
   const pages: CrawledPage[] = [];
   const jsonLd: any[] = [];
@@ -189,9 +196,17 @@ export async function crawlSite(
       return;
     }
     if (u.pathname.split("/").filter(Boolean).length > 3) return;
-    seen.add(url);
     const s = score(u.pathname);
     if (s.weight <= 0) return;
+
+    if (s.kind === "Page") {
+      const section = u.pathname.split("/").filter(Boolean)[0] ?? "";
+      const used = sectionQuota.get(section) ?? 0;
+      if (used >= 4) return;
+      sectionQuota.set(section, used + 1);
+    }
+
+    seen.add(url);
     queue.push({ url, weight: s.weight, kind: s.kind });
   };
 
@@ -212,9 +227,13 @@ export async function crawlSite(
         }
         fingerprints.add(fp);
 
-        if (p.text.replace(/\s/g, "").length < 180) {
+        // Home and Contact are worth keeping even when terse; everything else
+        // needs enough substance to justify a slot in the budget.
+        const density = p.text.replace(/\s/g, "").length;
+        const floor = kind === "Home" || kind === "Contact" ? 180 : 450;
+        if (density < floor) {
           skipped++;
-          return; // shell page, nothing to analyse
+          return; // stub or shell page, nothing to analyse
         }
 
         jsonLd.push(...p.jsonLd);

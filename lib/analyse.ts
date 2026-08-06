@@ -20,12 +20,12 @@ const SCHEMA = `{
   "phone": "Primary public phone, digits and + only, else \\"\\"",
   "email": "Primary public email, else \\"\\"",
   "address": "Full postal address on one line, else \\"\\"",
-  "summary": "3 to 4 sentences: what the company does, who it serves, how it makes money, what distinguishes it. Concrete and specific. No marketing adjectives.",
-  "products": ["6-10 named products or service lines. Format: 'Name — one clause on what it does'"],
+  "summary": "3 sentences: what the company does, who it serves, how it makes money, what distinguishes it. Concrete and specific. No marketing adjectives.",
+  "products": ["5-7 named products or service lines. Format: 'Name — one short clause on what it does'"],
   "painPoints": [
     {
       "title": "4-7 word business challenge THIS company plausibly faces",
-      "detail": "2-3 sentences grounding the challenge in evidence from their own site or the market, and why it matters commercially."
+      "detail": "2 sentences grounding the challenge in evidence and why it matters commercially."
     }
   ],
   "competitors": [
@@ -43,7 +43,7 @@ export interface AnalysisInput {
   apiKey?: string;
 }
 
-function budgetedCorpus(pages: CrawledPage[], budget = 26_000): string {
+function budgetedCorpus(pages: CrawledPage[], budget = 9_000): string {
   // Home/About/Products get the biggest slice; the tail gets whatever remains.
   const weights: Record<string, number> = {
     Home: 1.25,
@@ -65,11 +65,12 @@ function budgetedCorpus(pages: CrawledPage[], budget = 26_000): string {
 
 export async function analyse(model: string, input: AnalysisInput) {
   const searchBlock = input.search
+    .slice(0, 3)
     .map(
       (s) =>
         `Query: ${s.query}\n` +
         s.hits
-          .slice(0, 6)
+          .slice(0, 3)
           .map((h) => `- ${h.title} (${h.link})\n  ${h.snippet}`)
           .join("\n")
     )
@@ -114,16 +115,16 @@ Fill this exact JSON shape:
 ${SCHEMA}
 
 Rules:
-- painPoints: exactly 4 items. These are challenges the COMPANY faces (operational, competitive,
+- painPoints: exactly 3 items. These are challenges the COMPANY faces (operational, competitive,
   go-to-market, technical, regulatory) — not problems their product solves for customers. Ground
   each one in something you actually saw in the evidence.
-- competitors: exactly 6 items. Same country or region where determinable, same industry, and
+- competitors: exactly 5 items. Same country or region where determinable, same industry, and
   overlapping products. Real companies only. Give the homepage URL when you are confident.
 - products: use the company's own naming from the site.
 - Never copy marketing slogans verbatim. Write in neutral analyst register.
 - Output the JSON object only.`;
 
-  const raw = await completeJson(model, SYSTEM, user, 45_000, input.apiKey);
+  const raw = await completeJson(model, SYSTEM, user, 44_000, input.apiKey);
   return normalise(raw);
 }
 

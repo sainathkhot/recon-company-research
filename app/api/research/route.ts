@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /** Emit a real error before Vercel's 60s ceiling turns into a silent hang. */
-const PIPELINE_DEADLINE_MS = 52_000;
+const PIPELINE_DEADLINE_MS = 55_000;
 
 function deadline<T>(work: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
