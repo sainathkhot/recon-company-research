@@ -5,6 +5,7 @@ sweeps public sources through Google, has an OpenRouter model of your choosing w
 verifies the competitor set, and files a typeset PDF dossier — optionally posting it straight to Discord.
 
 **Live deployment:** https://recon-company-research.vercel.app/
+
 **Engineering writeup:** [Postmortem — research runs stalled at the AI step](docs/POSTMORTEM.md)
 ---
 
